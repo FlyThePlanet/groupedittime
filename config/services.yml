@@ -1,0 +1,13 @@
+services:
+    kinerity.groupedittime.listener:
+        class: kinerity\groupedittime\event\main_listener
+        arguments:
+            - '@dbal.conn'
+            - '@request'
+            - '@template'
+            - '@user'
+            - '%core.root_path%'
+            - '%core.php_ext%'
+            - '%tables%'
+        tags:
+            - { name: event.listener }
