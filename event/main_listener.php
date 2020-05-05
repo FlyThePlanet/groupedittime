@@ -125,7 +125,7 @@ class main_listener implements EventSubscriberInterface
 			include($this->root_path . 'includes/functions_user.' . $this->php_ext);
 		}
 
-		$event['s_cannot_edit_time'] = group_memberships($group_id_ary, $this->user->data['user_id'], true) ? true : false;
+		$event['s_cannot_edit_time'] = group_memberships($this->group_id_ary, $this->user->data['user_id'], true) ? true : false;
 	}
 
 	/**
