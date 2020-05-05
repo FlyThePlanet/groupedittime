@@ -41,6 +41,9 @@ class main_listener implements EventSubscriberInterface
 	/** @var array */
 	protected $tables;
 
+	/** @var array */
+	private $group_id_ary = [];
+
 	/**
 	 * Constructor
 	 *
@@ -73,6 +76,8 @@ class main_listener implements EventSubscriberInterface
 			'core.posting_modify_cannot_edit_conditions'	=> 'main',
 			'core.viewtopic_modify_post_action_conditions'	=> 'main',
 
+			'core.viewtopic_modify_post_data'	=> 'viewtopic_modify_post_data',
+
 			'core.user_setup'	=> 'load_language_on_setup',
 		];
 	}
@@ -100,19 +105,21 @@ class main_listener implements EventSubscriberInterface
 		]);
 	}
 
-	public function main($event)
+	public function viewtopic_modify_post_data()
 	{
 		$sql = 'SELECT group_id
 			FROM ' . $this->tables['groups'] . '
 			WHERE group_edit_time <> ' . (int) 0;
 		$result = $this->db->sql_query($sql);
-		$group_id_ary = [];
 		while ($row = $this->db->sql_fetchrow($result))
 		{
-			$group_id_ary[] = (int) $row['group_id'];
+			$this->group_id_ary[] = (int) $row['group_id'];
 		}
 		$this->db->sql_freeresult($result);
+	}
 
+	public function main($event)
+	{
 		if (!function_exists('group_memberships'))
 		{
 			include($this->root_path . 'includes/functions_user.' . $this->php_ext);
