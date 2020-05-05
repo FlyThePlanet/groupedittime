@@ -42,7 +42,7 @@ class main_listener implements EventSubscriberInterface
 	protected $tables;
 
 	/** @var array */
-	private $group_id_ary = [];
+	private $s_cannot_edit_time = bool;
 
 	/**
 	 * Constructor
@@ -73,8 +73,8 @@ class main_listener implements EventSubscriberInterface
 			'core.acp_manage_group_initialise_data'	=> 'acp_manage_group_initialise_data',
 			'core.acp_manage_group_display_form'	=> 'acp_manage_group_display_form',
 
-			'core.posting_modify_cannot_edit_conditions'	=> 'main',
-			'core.viewtopic_modify_post_action_conditions'	=> 'main',
+			'core.posting_modify_cannot_edit_conditions'	=> 'posting_modify_cannot_edit_conditions',
+			'core.viewtopic_modify_post_action_conditions'	=> 'viewtopic_modify_post_action_conditions',
 
 			'core.viewtopic_modify_post_data'	=> 'viewtopic_modify_post_data',
 
@@ -105,27 +105,86 @@ class main_listener implements EventSubscriberInterface
 		]);
 	}
 
-	public function viewtopic_modify_post_data()
+	public function posting_modify_cannot_edit_conditions($event)
 	{
-		$sql = 'SELECT group_id
+		$sql = 'SELECT group_id, group_edit_time
 			FROM ' . $this->tables['groups'] . '
 			WHERE group_edit_time <> ' . (int) 0;
 		$result = $this->db->sql_query($sql);
+		$group_id_ary = $group_ids = [];
 		while ($row = $this->db->sql_fetchrow($result))
 		{
-			$this->group_id_ary[] = (int) $row['group_id'];
+			$group_id_ary[$row['group_id']] = (int) $row['group_edit_time'];
 		}
 		$this->db->sql_freeresult($result);
-	}
 
-	public function main($event)
-	{
 		if (!function_exists('group_memberships'))
 		{
 			include($this->root_path . 'includes/functions_user.' . $this->php_ext);
 		}
 
-		$event['s_cannot_edit_time'] = group_memberships($this->group_id_ary, $this->user->data['user_id'], true) ? true : false;
+		foreach ($group_id_ary as $group_id => $group_edit_time)
+		{
+			if ($event['post_data']['post_time'] >= time() - ($group_edit_time * 60))
+			{
+				$group_ids[] = (int) $group_id;
+			}
+		}
+
+		$event['post_data']['s_group_edit'] = true;
+
+		if ($group_ids)
+		{
+			$event['post_data']['s_group_edit'] = !group_memberships($group_ids, $this->user->data['user_id'], true);
+		}
+	}
+
+	public function viewtopic_modify_post_data($event)
+	{
+		$sql = 'SELECT group_id, group_edit_time
+			FROM ' . $this->tables['groups'] . '
+			WHERE group_edit_time <> ' . (int) 0;
+		$result = $this->db->sql_query($sql);
+		$group_id_ary = $group_ids = [];
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$group_id_ary[$row['group_id']] = (int) $row['group_edit_time'];
+		}
+		$this->db->sql_freeresult($result);
+
+		if (!function_exists('group_memberships'))
+		{
+			include($this->root_path . 'includes/functions_user.' . $this->php_ext);
+		}
+
+		$rowset = $event['rowset'];
+
+		foreach ($rowset as $post_id => $post_data)
+		{
+			foreach ($group_id_ary as $group_id => $group_edit_time)
+			{
+				if ($post_data['post_time'] >= time() - ($group_edit_time * 60))
+				{
+					$group_ids[] = (int) $group_id;
+				}
+			}
+
+			$post_data['s_group_edit'] = true;
+
+			if ($group_ids)
+			{
+				$post_data['s_group_edit'] = !group_memberships($group_ids, $this->user->data['user_id'], true);
+			}
+
+			$rowset[$post_id] = $post_data;
+		}
+
+		$event['rowset'] = $rowset;
+	}
+
+	public function viewtopic_modify_post_action_conditions($event)
+	{
+		$event['s_cannot_edit_time'] = !$event['row']['s_group_edit'];
 	}
 
 	/**
