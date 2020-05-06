@@ -21,7 +21,7 @@ class ext extends \phpbb\extension\base
 	/**
 	 * Check whether or not the extension can be enabled.
 	 * The current phpBB version should meet or exceed
-	 * the minimum version required by this extension:
+	 * the minimum version required by this extension.
 	 *
 	 * Requires phpBB 3.3.0 and PHP 7.1.3
 	 */

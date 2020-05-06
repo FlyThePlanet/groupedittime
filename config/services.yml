@@ -3,6 +3,7 @@ services:
         class: kinerity\groupedittime\event\main_listener
         arguments:
             - '@dbal.conn'
+            - '@language'
             - '@request'
             - '@template'
             - '@user'
