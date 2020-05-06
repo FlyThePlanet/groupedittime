@@ -122,25 +122,6 @@ class main_listener implements EventSubscriberInterface
 		}
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	public function viewtopic_modify_post_data($event)
 	{
 		$group_id_ary = $this->get_group_id_ary();
