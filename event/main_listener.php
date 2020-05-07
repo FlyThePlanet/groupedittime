@@ -20,6 +20,9 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class main_listener implements EventSubscriberInterface
 {
+	/** @var \phpbb\config\config */
+	protected $config;
+
 	/** @var \phpbb\db\driver\driver_interface */
 	protected $db;
 
@@ -47,6 +50,7 @@ class main_listener implements EventSubscriberInterface
 	/**
 	 * Constructor
 	 *
+	 * @param \phpbb\config\config               $config
 	 * @param \phpbb\db\driver\driver_interface  $db
 	 * @param \phpbb\language\language           $language
 	 * @param \phpbb\request\request             $request
@@ -56,8 +60,9 @@ class main_listener implements EventSubscriberInterface
 	 * @param string                             $php_ext
 	 * @param array                              $tables
 	 */
-	public function __construct(\phpbb\db\driver\driver_interface $db, \phpbb\language\language $language, \phpbb\request\request $request, \phpbb\template\template $template, $user, $root_path, $php_ext, $tables)
+	public function __construct(\phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\language\language $language, \phpbb\request\request $request, \phpbb\template\template $template, $user, $root_path, $php_ext, $tables)
 	{
+		$this->config = $config;
 		$this->db = $db;
 		$this->language = $language;
 		$this->request = $request;
@@ -114,12 +119,9 @@ class main_listener implements EventSubscriberInterface
 			}
 		}
 
-		$event['post_data']['s_group_edit'] = true;
+		$event->update_subarray('post_data', 's_group_cannot_edit_time', (!empty($group_ids)) ? group_memberships($group_ids, $this->user->data['user_id'], true) : false);
 
-		if ($group_ids)
-		{
-			$event['post_data']['s_group_edit'] = !group_memberships($group_ids, $this->user->data['user_id'], true);
-		}
+		$event['s_cannot_edit_time'] = $event['post_data']['s_group_cannot_edit_time'] ? $event['post_data']['s_group_cannot_edit_time'] : ($this->config['edit_time'] ? $event['post_data']['post_time'] <= time() - ($this->config['edit_time'] * 60) : false);
 	}
 
 	public function viewtopic_modify_post_data($event)
@@ -138,12 +140,7 @@ class main_listener implements EventSubscriberInterface
 				}
 			}
 
-			$post_data['s_group_edit'] = true;
-
-			if ($group_ids)
-			{
-				$post_data['s_group_edit'] = !group_memberships($group_ids, $this->user->data['user_id'], true);
-			}
+			$post_data['s_group_cannot_edit_time'] = (!empty($group_ids)) ? group_memberships($group_ids, $this->user->data['user_id'], true) : false;
 
 			$rowset[$post_id] = $post_data;
 		}
@@ -153,7 +150,7 @@ class main_listener implements EventSubscriberInterface
 
 	public function viewtopic_modify_post_action_conditions($event)
 	{
-		$event['s_cannot_edit_time'] = !$event['row']['s_group_edit'];
+		$event['s_cannot_edit_time'] = $event['row']['s_group_cannot_edit_time'] ? $event['row']['s_group_cannot_edit_time'] : ($this->config['edit_time'] ? $event['row']['post_time'] <= time() - ($this->config['edit_time'] * 60) : false);
 	}
 
 	/**

@@ -2,6 +2,7 @@ services:
     kinerity.groupedittime.listener:
         class: kinerity\groupedittime\event\main_listener
         arguments:
+            - '@config'
             - '@dbal.conn'
             - '@language'
             - '@request'
