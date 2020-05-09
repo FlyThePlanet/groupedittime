@@ -113,7 +113,7 @@ class main_listener implements EventSubscriberInterface
 
 		foreach ($group_id_ary as $group_id => $group_edit_time)
 		{
-			if ($event['post_data']['post_time'] >= time() - ($group_edit_time * 60))
+			if ($event['post_data']['post_time'] <= time() - ($group_edit_time * 60))
 			{
 				$group_ids[] = (int) $group_id;
 			}
@@ -121,20 +121,21 @@ class main_listener implements EventSubscriberInterface
 
 		$event->update_subarray('post_data', 's_group_cannot_edit_time', (!empty($group_ids)) ? group_memberships($group_ids, $this->user->data['user_id'], true) : false);
 
-		$event['s_cannot_edit_time'] = $event['post_data']['s_group_cannot_edit_time'] ? $event['post_data']['s_group_cannot_edit_time'] : ($this->config['edit_time'] ? $event['post_data']['post_time'] <= time() - ($this->config['edit_time'] * 60) : false);
+		$event['s_cannot_edit_time'] = $event['post_data']['s_group_cannot_edit_time'] ? $event['post_data']['s_group_cannot_edit_time'] : false;
 	}
 
 	public function viewtopic_modify_post_data($event)
 	{
 		$group_id_ary = $this->get_group_id_ary();
-		$group_ids = [];
 		$rowset = $event['rowset'];
 
 		foreach ($rowset as $post_id => $post_data)
 		{
+			$group_ids = [];
+
 			foreach ($group_id_ary as $group_id => $group_edit_time)
 			{
-				if ($post_data['post_time'] >= time() - ($group_edit_time * 60))
+				if ($post_data['post_time'] <= time() - ($group_edit_time * 60))
 				{
 					$group_ids[] = (int) $group_id;
 				}
@@ -150,7 +151,7 @@ class main_listener implements EventSubscriberInterface
 
 	public function viewtopic_modify_post_action_conditions($event)
 	{
-		$event['s_cannot_edit_time'] = $event['row']['s_group_cannot_edit_time'] ? $event['row']['s_group_cannot_edit_time'] : ($this->config['edit_time'] ? $event['row']['post_time'] <= time() - ($this->config['edit_time'] * 60) : false);
+		$event['s_cannot_edit_time'] = $event['row']['s_group_cannot_edit_time'] ? $event['row']['s_group_cannot_edit_time'] : false;
 	}
 
 	/**
