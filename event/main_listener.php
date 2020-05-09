@@ -91,99 +91,127 @@ class main_listener implements EventSubscriberInterface
 
 	public function acp_manage_group_request_data($event)
 	{
+		$event->update_subarray('submit_ary', 'enable_edit_time', $this->request->variable('group_enable_edit_time', 0));
 		$event->update_subarray('submit_ary', 'edit_time', $this->request->variable('group_edit_time', 0));
 	}
 
 	public function acp_manage_group_initialise_data($event)
 	{
+		$event->update_subarray('test_variables', 'enable_edit_time', 'int');
 		$event->update_subarray('test_variables', 'edit_time', 'int');
 	}
 
+	/**
+	 * Load the variables used to display the extension fields on the group settings form
+	 */
 	public function acp_manage_group_display_form($event)
 	{
 		$this->template->assign_vars([
-			'GROUP_EDIT_TIME'	=> (isset($event['group_row']['group_edit_time'])) ? $event['group_row']['group_edit_time'] : 0,
+			'GROUP_ENABLE_EDIT_TIME'	=> (isset($event['group_row']['group_enable_edit_time'])) ? ($event['group_row']['group_enable_edit_time'] ? ' checked="checked"' : '') : '',
+			'GROUP_EDIT_TIME'			=> (isset($event['group_row']['group_edit_time'])) ? $event['group_row']['group_edit_time'] : 0,
 		]);
 	}
 
+	/**
+	 * Apply the group limit editing time settings to the possibility to edit or not one post
+	 */
 	public function posting_modify_cannot_edit_conditions($event)
 	{
 		$group_id_ary = $this->get_group_id_ary();
 
-		if (in_array(0, array_values($group_id_ary)))
-		{
-			$event->update_subarray('post_data', 's_group_cannot_edit_time', false);
-		}
-		else
+		// If the user is member of at least 1 group for which the limit editing time feature has been enabled, then look at the group(s) setting(s)
+		// Otherwise, leave the core code do the job and managing the global limit editing time
+		if (!empty($group_id_ary))
 		{
 			$group_ids = [];
 
+			// Test if any group allows editing at this time
 			foreach ($group_id_ary as $group_id => $group_edit_time)
 			{
-				if ($event['post_data']['post_time'] <= time() - ($group_edit_time * 60))
+				if ($group_edit_time == 0 || ($event['post_data']['post_time'] >= time() - ($group_edit_time * 60)))
 				{
 					$group_ids[] = (int) $group_id;
 				}
 			}
 
-			$event->update_subarray('post_data', 's_group_cannot_edit_time', (!empty($group_ids)) ? true : false);
+			// If at least 1 group allows to edit, then allow editing
+			$event['s_cannot_edit_time'] = !empty($group_ids) ? false : true;
 		}
-
-		$event['s_cannot_edit_time'] = $event['post_data']['s_group_cannot_edit_time'] ? $event['post_data']['s_group_cannot_edit_time'] : false;
 	}
 
+	/**
+	 * Apply the group limit editing time settings to the display or not of "Edit" buttons for each post of a topic page
+	 */
 	public function viewtopic_modify_post_data($event)
 	{
 		$group_id_ary = $this->get_group_id_ary();
-		$rowset = $event['rowset'];
 
-		foreach ($rowset as $post_id => $post_data)
+		// If the user is member of at least 1 group for which the limit editing time feature has been enabled, then look at the group(s) setting(s)
+		// Otherwise, leave the core code do the job and managing the global limit editing time
+		if (!empty($group_id_ary))
 		{
+			// If at least one group gives unlimited time, then allow editing regardless the current time
+			// Otherwise, test the right to edit post by post, accorting to the current time
 			if (in_array(0, array_values($group_id_ary)))
 			{
+				$post_data['s_group_edit_time_enabled'] = true;
 				$post_data['s_group_cannot_edit_time'] = false;
-			}
-			else
+			} else
 			{
-				$group_ids = [];
+				// Test the right to edit post by post, accorting to the current time
+				$rowset = $event['rowset'];
 
-				foreach ($group_id_ary as $group_id => $group_edit_time)
+				foreach ($rowset as $post_id => $post_data)
 				{
-					if ($post_data['post_time'] <= time() - ($group_edit_time * 60))
+					$post_data['s_group_edit_time_enabled'] = true;
+	
+					$group_ids = [];
+
+					// Test if any group allows editing at this time, this post
+					foreach ($group_id_ary as $group_id => $group_edit_time)
 					{
-						$group_ids[] = (int) $group_id;
+						if ($group_edit_time == 0 || ($post_data['post_time'] >= time() - ($group_edit_time * 60)))
+						{
+							$group_ids[] = (int) $group_id;
+						}
 					}
+
+					// If at least 1 group allows to edit, then allow editing this post
+					$post_data['s_group_cannot_edit_time'] = !empty($group_ids) ? false : true;
+
+					$rowset[$post_id] = $post_data;
 				}
 
-				$post_data['s_group_cannot_edit_time'] = (!empty($group_ids)) ? true : false;
+				$event['rowset'] = $rowset;
 			}
-
-			$rowset[$post_id] = $post_data;
+		} else
+		{
+			$post_data['s_group_edit_time_enabled'] = false;
 		}
-
-		$event['rowset'] = $rowset;
 	}
 
 	public function viewtopic_modify_post_action_conditions($event)
 	{
-		$event['s_cannot_edit_time'] = $event['row']['s_group_cannot_edit_time'] ? $event['row']['s_group_cannot_edit_time'] : false;
+		// If a group limit editing time feature has been enabled, then update the $s_cannot_edit_time variable for the post to display or not the Edit icon
+		// Otherwise, do not update the variable, leave the core code do the job and managing the global limit editing time
+		if ($event['row']['s_group_edit_time_enabled'] == true)
+		{
+			$event['s_cannot_edit_time'] = $event['row']['s_group_cannot_edit_time'];
+		}
 	}
 
 	/**
-	 * Load common language files during user setup
+	 * Build the list of groups the user is member of and for which the limit editing time feature has been enabled
 	 */
-	public function load_language_on_setup($event)
-	{
-		$this->language->add_lang('common', 'kinerity/groupedittime');
-	}
-
 	private function get_group_id_ary()
 	{
 		$sql = 'SELECT g.group_id, g.group_edit_time
 			FROM ' . $this->tables['groups'] . ' g
 			LEFT JOIN ' . $this->tables['user_group'] . ' ug
 				ON ug.group_id = g.group_id
-			WHERE ug.user_id = ' . (int) $this->user->data['user_id'];
+			WHERE g.group_enable_edit_time = 1 AND ug.user_id = ' . (int) $this->user->data['user_id'];
+
+		
 		$result = $this->db->sql_query($sql);
 		$group_id_ary = [];
 		while ($row = $this->db->sql_fetchrow($result))
@@ -199,4 +227,13 @@ class main_listener implements EventSubscriberInterface
 
 		return $group_id_ary;
 	}
+
+	/**
+	 * Load common language files during user setup
+	 */
+	public function load_language_on_setup($event)
+	{
+		$this->language->add_lang('common', 'kinerity/groupedittime');
+	}
+
 }
