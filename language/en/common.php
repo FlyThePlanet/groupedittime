@@ -38,6 +38,8 @@ if (empty($lang) || !is_array($lang))
 //
 
 $lang = array_merge($lang, [
-	'GROUP_EDIT_TIME'			=> 'Group limit editing time',
-	'GROUP_EDIT_TIME_EXPLAIN'	=> 'Limits the group time available to edit a new post. Setting the value to 0 allows unlimited edit time. <b>Warning:</b> This extension overrides the board-wide setting!',
+	'GROUP_ENABLE_EDIT_TIME'			=> 'Enable specific time management for post editing',
+	'GROUP_ENABLE_EDIT_TIME_EXPLAIN'	=> 'Allows to manage a specific time for the group members. This setting overcomes the limit time to edit posts set for ordinary forum users.',
+	'GROUP_EDIT_TIME'					=> 'Maximum time to edit posts',
+	'GROUP_EDIT_TIME_EXPLAIN'			=> 'Set a maximum time to edit posts, specifically for the group members. Setting the value to "0" gives unlimited time to group members.',
 ]);
