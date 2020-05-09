@@ -39,5 +39,5 @@ if (empty($lang) || !is_array($lang))
 
 $lang = array_merge($lang, [
 	'GROUP_EDIT_TIME'			=> 'Group limit editing time',
-	'GROUP_EDIT_TIME_EXPLAIN'	=> 'Limits the group time available to edit a new post. Setting the value to 0 allows unlimited edit time. <b>Warning:</b> This extension (regardless of setting) overrides the board-wide setting!',
+	'GROUP_EDIT_TIME_EXPLAIN'	=> 'Limits the group time available to edit a new post. Setting the value to 0 allows unlimited edit time. <b>Warning:</b> This extension overrides the board-wide setting!',
 ]);

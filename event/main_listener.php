@@ -109,17 +109,25 @@ class main_listener implements EventSubscriberInterface
 	public function posting_modify_cannot_edit_conditions($event)
 	{
 		$group_id_ary = $this->get_group_id_ary();
-		$group_ids = [];
 
-		foreach ($group_id_ary as $group_id => $group_edit_time)
+		if (in_array(0, array_values($group_id_ary)))
 		{
-			if ($event['post_data']['post_time'] <= time() - ($group_edit_time * 60))
-			{
-				$group_ids[] = (int) $group_id;
-			}
+			$event->update_subarray('post_data', 's_group_cannot_edit_time', false);
 		}
+		else
+		{
+			$group_ids = [];
 
-		$event->update_subarray('post_data', 's_group_cannot_edit_time', (!empty($group_ids)) ? group_memberships($group_ids, $this->user->data['user_id'], true) : false);
+			foreach ($group_id_ary as $group_id => $group_edit_time)
+			{
+				if ($event['post_data']['post_time'] <= time() - ($group_edit_time * 60))
+				{
+					$group_ids[] = (int) $group_id;
+				}
+			}
+
+			$event->update_subarray('post_data', 's_group_cannot_edit_time', (!empty($group_ids)) ? true : false);
+		}
 
 		$event['s_cannot_edit_time'] = $event['post_data']['s_group_cannot_edit_time'] ? $event['post_data']['s_group_cannot_edit_time'] : false;
 	}
@@ -131,17 +139,24 @@ class main_listener implements EventSubscriberInterface
 
 		foreach ($rowset as $post_id => $post_data)
 		{
-			$group_ids = [];
-
-			foreach ($group_id_ary as $group_id => $group_edit_time)
+			if (in_array(0, array_values($group_id_ary)))
 			{
-				if ($post_data['post_time'] <= time() - ($group_edit_time * 60))
-				{
-					$group_ids[] = (int) $group_id;
-				}
+				$post_data['s_group_cannot_edit_time'] = false;
 			}
+			else
+			{
+				$group_ids = [];
 
-			$post_data['s_group_cannot_edit_time'] = (!empty($group_ids)) ? group_memberships($group_ids, $this->user->data['user_id'], true) : false;
+				foreach ($group_id_ary as $group_id => $group_edit_time)
+				{
+					if ($post_data['post_time'] <= time() - ($group_edit_time * 60))
+					{
+						$group_ids[] = (int) $group_id;
+					}
+				}
+
+				$post_data['s_group_cannot_edit_time'] = (!empty($group_ids)) ? true : false;
+			}
 
 			$rowset[$post_id] = $post_data;
 		}
@@ -164,9 +179,11 @@ class main_listener implements EventSubscriberInterface
 
 	private function get_group_id_ary()
 	{
-		$sql = 'SELECT group_id, group_edit_time
-			FROM ' . $this->tables['groups'] . '
-			WHERE group_edit_time > ' . (int) 0;
+		$sql = 'SELECT g.group_id, g.group_edit_time
+			FROM ' . $this->tables['groups'] . ' g
+			LEFT JOIN ' . $this->tables['user_group'] . ' ug
+				ON ug.group_id = g.group_id
+			WHERE ug.user_id = ' . (int) $this->user->data['user_id'];
 		$result = $this->db->sql_query($sql);
 		$group_id_ary = [];
 		while ($row = $this->db->sql_fetchrow($result))
