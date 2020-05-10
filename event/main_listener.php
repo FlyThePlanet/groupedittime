@@ -210,8 +210,6 @@ class main_listener implements EventSubscriberInterface
 			LEFT JOIN ' . $this->tables['user_group'] . ' ug
 				ON ug.group_id = g.group_id
 			WHERE g.group_enable_edit_time = 1 AND ug.user_id = ' . (int) $this->user->data['user_id'];
-
-		
 		$result = $this->db->sql_query($sql);
 		$group_id_ary = [];
 		while ($row = $this->db->sql_fetchrow($result))
