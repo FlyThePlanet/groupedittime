@@ -156,7 +156,8 @@ class main_listener implements EventSubscriberInterface
 			{
 				$post_data['s_group_edit_time_enabled'] = true;
 				$post_data['s_group_cannot_edit_time'] = false;
-			} else
+			}
+			else
 			{
 				// Test the right to edit post by post, accorting to the current time
 				$rowset = $event['rowset'];
@@ -184,7 +185,8 @@ class main_listener implements EventSubscriberInterface
 
 				$event['rowset'] = $rowset;
 			}
-		} else
+		}
+		else
 		{
 			$post_data['s_group_edit_time_enabled'] = false;
 		}
@@ -218,11 +220,6 @@ class main_listener implements EventSubscriberInterface
 		}
 		$this->db->sql_freeresult($result);
 
-		if (!function_exists('group_memberships'))
-		{
-			include($this->root_path . 'includes/functions_user.' . $this->php_ext);
-		}
-
 		return $group_id_ary;
 	}
 
@@ -233,5 +230,4 @@ class main_listener implements EventSubscriberInterface
 	{
 		$this->language->add_lang('common', 'kinerity/groupedittime');
 	}
-
 }
