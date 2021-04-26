@@ -3,7 +3,7 @@
     "type": "phpbb-extension",
     "description": "n/a",
     "homepage": "https://www.project-w.org/",
-    "version": "1.0.0-dev",
+    "version": "1.0.0-RC",
     "time": "2020-01-01",
     "license": "GPL-2.0-only",
     "authors": [

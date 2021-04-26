@@ -25,7 +25,8 @@ class m1_initial_schema extends \phpbb\db\migration\migration
 		return [
 			'add_columns'	=> [
 				$this->table_prefix . 'groups'	=> [
-					'group_edit_time'	=> ['UINT', 0],
+					'group_enable_edit_time'	=> ['BOOL', 0],
+					'group_edit_time'			=> ['UINT', 0],
 				],
 			],
 		];
@@ -39,6 +40,7 @@ class m1_initial_schema extends \phpbb\db\migration\migration
 		return [
 			'drop_columns'	=> [
 				$this->table_prefix . 'groups'	=> [
+					'group_enable_edit_time',
 					'group_edit_time',
 				],
 			],

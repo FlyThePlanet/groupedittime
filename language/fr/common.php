@@ -38,8 +38,8 @@ if (empty($lang) || !is_array($lang))
 //
 
 $lang = array_merge($lang, [
-	'GROUP_ENABLE_EDIT_TIME'			=> 'Enable group edit time',
-	'GROUP_ENABLE_EDIT_TIME_EXPLAIN'	=> 'Allows to manage a specific time for group members. This setting overrides the board-wide setting.',
-	'GROUP_EDIT_TIME'					=> 'Group limit editing time',
-	'GROUP_EDIT_TIME_EXPLAIN'			=> 'Limits the group time available to edit a new post. Setting the value to 0 allows unlimited edit time.',
+	'GROUP_ENABLE_EDIT_TIME'			=> 'Activer une gestion du temps spécifique pour modifier les messages',
+	'GROUP_ENABLE_EDIT_TIME_EXPLAIN'	=> 'Permet de gérer une durée spécifique pour les membres du groupe. Ce paramètre s\'imposera sur celui paramétré pour les utilisateurs ordinaires du forum.',
+	'GROUP_EDIT_TIME'					=> 'Temps maximum pour modifier les messages',
+	'GROUP_EDIT_TIME_EXPLAIN'			=> 'Fixe une durée maximum pour modifier un message, spécifique pour les membres du groupe. Réglez cette valeur sur "0" si vous souhaitez donner un temps illimité aux membres du groupe.',
 ]);
