@@ -140,63 +140,53 @@ class main_listener implements EventSubscriberInterface
 	}
 
 	/**
-	 * Apply the group limit editing time settings to the display or not of "Edit" buttons for each post of a topic page
+	 * Apply the Group limit editing time to the display or not "Edit" buttons for each post of a topic page
 	 */
 	public function viewtopic_modify_post_data($event)
 	{
 		$group_id_ary = $this->get_group_id_ary();
 
-		// If the user is member of at least 1 group for which the limit editing time feature has been enabled, then look at the group(s) setting(s)
+		// If the current user is member of at least 1 group for which the limit editing time feature has been enabled, then apply the group(s) setting(s)
 		// Otherwise, leave the core code do the job and managing the global limit editing time
 		if (!empty($group_id_ary))
 		{
-			// If at least one group gives unlimited time, then allow editing regardless the current time
-			// Otherwise, test the right to edit post by post, accorting to the current time
+			// Check if one group gives unlimited time to edit, otherwhise find the maximum time given
 			if (in_array(0, array_values($group_id_ary)))
 			{
-				$post_data['s_group_edit_time_enabled'] = true;
-				$post_data['s_group_cannot_edit_time'] = false;
+				$max_group_edit_time = 0;
 			}
 			else
 			{
-				// Test the right to edit post by post, accorting to the current time
-				$rowset = $event['rowset'];
+				$max_group_edit_time = max($group_id_ary);
+			}
 
-				foreach ($rowset as $post_id => $post_data)
+			// Set for each post if the "Edit" button should be displayed or not
+			$rowset = $event['rowset'];
+
+			foreach ($rowset as $post_id => $post_data)
+			{
+				// Set to display the "Edit" button if unlimited time, or post more recent than current time - max time to edit
+				if ($max_group_edit_time == 0 || ($post_data['post_time'] >= time() - ($max_group_edit_time * 60)))
 				{
-					$post_data['s_group_edit_time_enabled'] = true;
-	
-					$group_ids = [];
-
-					// Test if any group allows editing at this time, this post
-					foreach ($group_id_ary as $group_id => $group_edit_time)
-					{
-						if ($group_edit_time == 0 || ($post_data['post_time'] >= time() - ($group_edit_time * 60)))
-						{
-							$group_ids[] = (int) $group_id;
-						}
-					}
-
-					// If at least 1 group allows to edit, then allow editing this post
-					$post_data['s_group_cannot_edit_time'] = !empty($group_ids) ? false : true;
-
-					$rowset[$post_id] = $post_data;
+					$post_data['s_group_cannot_edit_time'] = false;
+				}
+				else
+				{
+					$post_data['s_group_cannot_edit_time'] = true;
 				}
 
-				$event['rowset'] = $rowset;
+				$rowset[$post_id] = $post_data;
 			}
-		}
-		else
-		{
-			$post_data['s_group_edit_time_enabled'] = false;
+
+			$event['rowset'] = $rowset;
 		}
 	}
 
 	public function viewtopic_modify_post_action_conditions($event)
 	{
-		// If a group limit editing time feature has been enabled, then update the $s_cannot_edit_time variable for the post to display or not the Edit icon
-		// Otherwise, do not update the variable, leave the core code do the job and managing the global limit editing time
-		if ($event['row']['s_group_edit_time_enabled'] == true)
+		// If an instruction to overcome the global Limit editing time has been set for the post (cf. above),
+		// then overcome the post $s_cannot_edit_time variable which control the display of the "Edit" button for the post
+		if (isset($event['row']['s_group_cannot_edit_time']))
 		{
 			$event['s_cannot_edit_time'] = $event['row']['s_group_cannot_edit_time'];
 		}
